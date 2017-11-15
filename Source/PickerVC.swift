@@ -29,6 +29,7 @@ public class PickerVC: FSBottomPager, PagerDelegate {
         self.configuration = configuration
         self.albumVC = FSAlbumVC(configuration: configuration)
         super.init(nibName: nil, bundle: nil)
+        self.bottomPagerconfiguration = configuration
     }
     
     public required init?(coder aDecoder: NSCoder) {

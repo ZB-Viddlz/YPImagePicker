@@ -91,8 +91,6 @@ final class MenuItem: UIView {
     var button = UIButton()
     var configuration: YPImagePickerConfiguration!
     
-    
-    
     public convenience init(configuration: YPImagePickerConfiguration?) {
         
         self.init(frame:CGRect.zero)
