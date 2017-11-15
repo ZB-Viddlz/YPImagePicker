@@ -89,9 +89,20 @@ final class MenuItem: UIView {
     
     var text = UILabel()
     var button = UIButton()
+    var configuration: YPImagePickerConfiguration!
     
-    convenience init() {
+    
+    
+    public convenience init(configuration: YPImagePickerConfiguration?) {
+        
         self.init(frame:CGRect.zero)
+        
+        if configuration != nil {
+            self.configuration = configuration
+        } else {
+            self.configuration = YPImagePickerConfiguration()
+        }
+        
         backgroundColor = .clear
         
         sv(
@@ -104,16 +115,43 @@ final class MenuItem: UIView {
         
         text.style { l in
             l.textAlignment = .center
-            l.font = UIFont.systemFont(ofSize: 17, weight: UIFont.Weight.medium)
+            l.font = self.configuration.bottomMenuItemFont
+            l.textColor = self.unselectedColor()
+        }
+        self.configuration = configuration
+    }
+    
+    convenience init() {
+        self.init(frame:CGRect.zero)
+        self.configuration = YPImagePickerConfiguration()
+        backgroundColor = .clear
+        
+        sv(
+            text,
+            button
+        )
+        
+        text.centerInContainer()
+        button.fillContainer()
+        
+        text.style { l in
+            l.textAlignment = .center
+            l.font = self.configuration.bottomMenuItemFont
             l.textColor = self.unselectedColor()
         }
     }
     
     func selectedColor() -> UIColor {
+        if configuration != nil {
+            return configuration!.bottomMenuItemSelectedColor
+        }
         return UIColor(r: 38, g: 38, b: 38)
     }
     
     func unselectedColor() -> UIColor {
+        if configuration != nil {
+            return configuration!.bottomMenuItemUnselectedColor
+        }
         return UIColor(r: 153, g: 153, b: 153)
     }
     
@@ -147,7 +185,7 @@ final class PagerView: UIView {
             |header| ~ 50,
             0
         )
-
+        
         clipsToBounds = false
         scrollView.clipsToBounds = false
         scrollView.isPagingEnabled = true
@@ -173,6 +211,7 @@ public class FSBottomPager: UIViewController, UIScrollViewDelegate {
     
     weak var delegate: PagerDelegate?
     var controllers = [UIViewController]() { didSet { reload() } }
+    var bottomPagerconfiguration: YPImagePickerConfiguration?
     
     var v = PagerView()
     
@@ -191,7 +230,7 @@ public class FSBottomPager: UIViewController, UIScrollViewDelegate {
     public func scrollViewDidScroll(_ scrollView: UIScrollView) {
         delegate?.pagerScrollViewDidScroll(scrollView)
     }
-
+    
     public func scrollViewWillEndDragging(_ scrollView: UIScrollView,
                                           withVelocity velocity: CGPoint,
                                           targetContentOffset: UnsafeMutablePointer<CGPoint>) {
@@ -221,8 +260,8 @@ public class FSBottomPager: UIViewController, UIScrollViewDelegate {
         
         // Build headers
         for (index, c) in controllers.enumerated() {
-            let menuItem = MenuItem()
-            menuItem.text.text = c.title?.capitalized
+            let menuItem = MenuItem(configuration: bottomPagerconfiguration)
+            menuItem.text.text = c.title?.uppercased()
             menuItem.button.tag = index
             menuItem.button.addTarget(self,
                                       action: #selector(tabTapped(_:)),
@@ -249,7 +288,7 @@ public class FSBottomPager: UIViewController, UIScrollViewDelegate {
         v.scrollView.setContentOffset(CGPoint(x:x, y:0), animated: animated)
         selectPage(page)
     }
-
+    
     func selectPage(_ page: Int) {
         currentPage = page
         //select menut item and deselect others
@@ -274,3 +313,4 @@ public class FSBottomPager: UIViewController, UIScrollViewDelegate {
         currentMenuItem.select()
     }
 }
+

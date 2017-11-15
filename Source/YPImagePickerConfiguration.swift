@@ -35,9 +35,16 @@ public struct YPImagePickerConfiguration {
     
     /// Defines the name of the album when saving pictures in the user's photo library. In general that would be your App name. Defaults to "DefaultYPImagePickerAlbumName"
     public var albumName = "DefaultYPImagePickerAlbumName"
+    
+    /// Bottom Menu Configurations
+    public var bottomMenuItemSelectedColor = UIColor(r: 38, g: 38, b: 38)
+    public var bottomMenuItemUnselectedColor = UIColor(r: 153, g: 153, b: 153)
+    public var bottomMenuItemFont = UIFont.systemFont(ofSize: 17, weight: UIFont.Weight.medium)
+    
 }
 
 public enum LibraryImageSize {
     case original
     case cappedTo(size: CGFloat)
 }
+
