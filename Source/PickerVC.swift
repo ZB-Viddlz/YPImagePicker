@@ -52,13 +52,13 @@ public class PickerVC: FSBottomPager, PagerDelegate {
         case camera
         case video
     }
-
+    
     lazy var cameraVC: FSCameraVC = {
         return FSCameraVC(shouldUseFrontCamera: self.configuration.usesFrontCamera)
     }()
     let videoVC = FSVideoVC()
     
-    var mode = Mode.camera
+    var mode = Mode.library
     
     var capturedImage: UIImage?
     
@@ -69,7 +69,7 @@ public class PickerVC: FSBottomPager, PagerDelegate {
     
     public override func viewDidLoad() {
         super.viewDidLoad()
-
+        
         flashOnImage = imageFromBundle("yp_iconFlash_on")
         flashOffImage = imageFromBundle("yp_iconFlash_off")
         
@@ -92,7 +92,7 @@ public class PickerVC: FSBottomPager, PagerDelegate {
             }
         }
         
-        startOnPage(1)
+        startOnPage(0)
         updateUI()
     }
     
@@ -178,7 +178,7 @@ public class PickerVC: FSBottomPager, PagerDelegate {
         let vc = YPAlbumFolderSelectionVC()
         vc.noVideos = !self.configuration.showsVideo
         let navVC = UINavigationController(rootViewController: vc)
-
+        
         vc.didSelectAlbum = { [weak self] album in
             self?.albumVC.collection = album.collection
             self?.albumVC.refreshMediaRequest()
@@ -211,7 +211,7 @@ public class PickerVC: FSBottomPager, PagerDelegate {
         )
         
         |-(>=8)-label.centerInContainer()-(>=8)-|
-    
+        
         button.fillContainer()
         alignHorizontally(label-arrow)
         
@@ -305,3 +305,4 @@ func imageWithColor(_ color: UIColor) -> UIImage {
     UIGraphicsEndImageContext()
     return image ?? UIImage()
 }
+
