@@ -220,7 +220,7 @@ public class PickerVC: FSBottomPager, PagerDelegate {
     
     func updateUI() {
         // Update Nav Bar state.
-        navigationItem.leftBarButtonItem = UIBarButtonItem(title: fsLocalized("YPImagePickerNext"),
+        navigationItem.leftBarButtonItem = UIBarButtonItem(title: fsLocalized("YPImagePickerCancel"),
                                                            style: .done,
                                                            target: self,
                                                            action: #selector(close))
