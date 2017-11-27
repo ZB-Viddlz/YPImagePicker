@@ -9,7 +9,8 @@
 "YPImagePickerLibrary" = "Gallery";
 "YPImagePickerPhoto" = "Photo";
 "YPImagePickerVideo" = "Video";
-"YPImagePickerNext" = "Next";
+"YPImagePickerNext" = "NEXT";
+"YPImagePickerCancel" = "CANCEL";
 "YPImagePickerFilter" = "Filter";
 "YPImagePickerVideoTooLongTitle" = "Video duration";
 "YPImagePickerVideoTooLongDetail" = "Pick a video less than 60 seconds long.";

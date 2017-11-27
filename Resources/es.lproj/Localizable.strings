@@ -10,6 +10,7 @@
 "YPImagePickerPhoto" = "Foto";
 "YPImagePickerVideo" = "Vídeo";
 "YPImagePickerNext" = "Siguiente";
+"YPImagePickerCancel" = "CANCELAR";
 "YPImagePickerFilter" = "Filtro";
 "YPImagePickerVideoTooLongTitle" = "Demasiado largo";
 "YPImagePickerVideoTooLongDetail" = "Elige un vídeo que dure menos de un minuto.";
