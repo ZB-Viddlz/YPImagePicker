@@ -194,7 +194,7 @@ public class PickerVC: FSBottomPager, PagerDelegate {
         titleView.frame = CGRect(x: 0, y: 0, width: 200, height: 40)
         
         let label = UILabel()
-        label.text = aTitle
+        label.text = aTitle.uppercased()
         label.textColor = .black
         
         let arrow = UIImageView()

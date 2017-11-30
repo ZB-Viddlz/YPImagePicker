@@ -7,7 +7,7 @@
  */
 
 "YPImagePickerLibrary" = "Gallery";
-"YPImagePickerPhoto" = "Photo";
+"YPImagePickerPhoto" = "PHOTO";
 "YPImagePickerVideo" = "Video";
 "YPImagePickerNext" = "NEXT";
 "YPImagePickerCancel" = "CANCEL";
