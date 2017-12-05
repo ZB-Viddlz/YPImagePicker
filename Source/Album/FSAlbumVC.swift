@@ -54,7 +54,7 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
     var cropBottomY: CGFloat  = 0.0
     var dragStartPos: CGPoint = CGPoint.zero
     let dragDiff: CGFloat     = 0//20.0
-
+    
     var _isImageShown = true
     var isImageShown: Bool {
         get { return self._isImageShown }
@@ -67,13 +67,18 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
                 if isImageShown {
                     v.imageCropView.isScrollEnabled = true
                 } else {
-                   v.imageCropView.isScrollEnabled = false
+                    v.imageCropView.isScrollEnabled = false
                 }
             }
         }
     }
-
+    
     var v: FSAlbumView!
+    
+    
+    //MultipleSelections
+    var enableMultipleSelection = true
+    var phAssets: [PHAsset] = [PHAsset]()
     
     public override func loadView() {
         let bundle = Bundle(for: self.classForCoder)
@@ -118,7 +123,7 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
     deinit {
         PHPhotoLibrary.shared().unregisterChangeObserver(self)
     }
-
+    
     func initialize() {
         if fetchResult != nil {
             return
@@ -141,11 +146,14 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
         v.imageCropViewContainer.layer.shadowRadius  = 30.0
         v.imageCropViewContainer.layer.shadowOpacity = 0.9
         v.imageCropViewContainer.layer.shadowOffset  = CGSize.zero
+        v.imageCropViewContainer.multipleSelectionEnabled = { multipleSelectionEnabled in
+            print(multipleSelectionEnabled)
+        }
         
         v.collectionView.register(FSAlbumViewCell.self, forCellWithReuseIdentifier: "FSAlbumViewCell")
         
         refreshMediaRequest()
-
+        
         let tapImageGesture = UITapGestureRecognizer(target: self, action: #selector(tappedImage))
         v.imageCropViewContainer.addGestureRecognizer(tapImageGesture)
         
@@ -176,8 +184,8 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
             changeImage(fetchResult[0])
             v.collectionView.reloadData()
             v.collectionView.selectItem(at: IndexPath(row: 0, section: 0),
-                                             animated: false,
-                                             scrollPosition: UICollectionViewScrollPosition())
+                                        animated: false,
+                                        scrollPosition: UICollectionViewScrollPosition())
         }
         scrollToTop()
     }
@@ -197,9 +205,9 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
             refreshImageCurtainAlpha()
         }
     }
-
+    
     public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith
-                                  otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        otherGestureRecognizer: UIGestureRecognizer) -> Bool {
         return true
     }
     
@@ -274,8 +282,8 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
                                delay: 0.0,
                                options: UIViewAnimationOptions.curveEaseOut,
                                animations: {
-                    self.v.layoutIfNeeded()
-                    }, completion: nil)
+                                self.v.layoutIfNeeded()
+                }, completion: nil)
                 dragDirection = Direction.down
             } else {
                 // Get back to the original position
@@ -284,15 +292,15 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
                                delay: 0.0,
                                options: UIViewAnimationOptions.curveEaseOut,
                                animations: {
-                    self.v.layoutIfNeeded()
-                    }, completion: nil)
+                                self.v.layoutIfNeeded()
+                }, completion: nil)
                 dragDirection = Direction.up
             }
         }
         
         // Update isImageShown
         isImageShown = v.imageCropViewConstraintTop.constant == 0
-
+        
         refreshImageCurtainAlpha()
     }
     
@@ -308,19 +316,19 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
                                cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let asset = fetchResult[indexPath.item]
         guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "FSAlbumViewCell",
-                                                         for: indexPath) as? FSAlbumViewCell else {
-            fatalError("unexpected cell in collection view")
+                                                            for: indexPath) as? FSAlbumViewCell else {
+                                                                fatalError("unexpected cell in collection view")
         }
         cell.representedAssetIdentifier = asset.localIdentifier
         imageManager.requestImage(for: asset,
                                   targetSize: cellSize,
                                   contentMode: .aspectFill,
                                   options: nil) { image, _ in
-            // The cell may have been recycled when the time this gets called
-            // set image only if it's still showing the same asset.
-            if cell.representedAssetIdentifier == asset.localIdentifier && image != nil {
-                cell.imageView.image = image
-            }
+                                    // The cell may have been recycled when the time this gets called
+                                    // set image only if it's still showing the same asset.
+                                    if cell.representedAssetIdentifier == asset.localIdentifier && image != nil {
+                                        cell.imageView.image = image
+                                    }
         }
         
         let isVideo = (asset.mediaType == .video)
@@ -333,7 +341,7 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
         }
         return cell
     }
-
+    
     public func numberOfSections(in collectionView: UICollectionView) -> Int {
         return 1
     }
@@ -360,7 +368,7 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
         v.imageCropViewConstraintTop.constant = imageCropViewOriginalConstraintTop
         UIView.animate(withDuration: 0.2, delay: 0.0, options: UIViewAnimationOptions.curveEaseOut, animations: {
             self.v.layoutIfNeeded()
-            }, completion: nil)
+        }, completion: nil)
         dragDirection = Direction.up
         collectionView.scrollToItem(at: indexPath, at: .top, animated: true)
         refreshImageCurtainAlpha()
@@ -408,9 +416,16 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
     }
     
     var latestImageTapped = ""
-
+    
     func changeImage(_ asset: PHAsset) {
         phAsset = asset
+        if enableMultipleSelection {
+            if !phAssets.contains(asset) {
+                phAssets.append(asset)
+            }
+        }
+        
+        
         latestImageTapped = asset.localIdentifier
         v.imageCropViewContainer.isVideoMode = asset.mediaType == .video
         
@@ -449,7 +464,7 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
                                                     }
                                                 }
                 }
-        }
+            }
         case .video:
             
             DispatchQueue.main.async {
@@ -485,16 +500,16 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
                 PHImageManager.default().requestPlayerItem(forVideo: asset,
                                                            options: videosOptions,
                                                            resultHandler: { playerItem, _ in
-                    // Prevent long videos to come after user selected another in the meantime.
-                    if self.latestImageTapped == asset.localIdentifier {
-                        DispatchQueue.main.async {
-                            let player = AVPlayer(playerItem: playerItem)
-                            self.v.imageCropViewContainer.playerLayer.player = player
-                            self.v.imageCropViewContainer.playerLayer.isHidden = false
-                            self.v.imageCropViewContainer.spinnerView.alpha = 0
-                            player.play()
-                        }
-                    }
+                                                            // Prevent long videos to come after user selected another in the meantime.
+                                                            if self.latestImageTapped == asset.localIdentifier {
+                                                                DispatchQueue.main.async {
+                                                                    let player = AVPlayer(playerItem: playerItem)
+                                                                    self.v.imageCropViewContainer.playerLayer.player = player
+                                                                    self.v.imageCropViewContainer.playerLayer.isHidden = false
+                                                                    self.v.imageCropViewContainer.spinnerView.alpha = 0
+                                                                    player.play()
+                                                                }
+                                                            }
                 })
             }
         case .audio, .unknown:
@@ -520,26 +535,26 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
             var removedIndexPaths: [IndexPath] = []
             
             computeDifferenceBetweenRect(previousPreheatRect,
-                                              andRect: preheatRect,
-                                              removedHandler: { removedRect in
-                let indexPaths = self.v.collectionView.aapl_indexPathsForElementsInRect(removedRect)
-                removedIndexPaths += indexPaths
-                }, addedHandler: {addedRect in
-                    let indexPaths = self.v.collectionView.aapl_indexPathsForElementsInRect(addedRect)
-                    addedIndexPaths += indexPaths
+                                         andRect: preheatRect,
+                                         removedHandler: { removedRect in
+                                            let indexPaths = self.v.collectionView.aapl_indexPathsForElementsInRect(removedRect)
+                                            removedIndexPaths += indexPaths
+            }, addedHandler: {addedRect in
+                let indexPaths = self.v.collectionView.aapl_indexPathsForElementsInRect(addedRect)
+                addedIndexPaths += indexPaths
             })
             
             let assetsToStartCaching = assetsAtIndexPaths(addedIndexPaths)
             let assetsToStopCaching = assetsAtIndexPaths(removedIndexPaths)
             
             imageManager.startCachingImages(for: assetsToStartCaching,
-                                                  targetSize: cellSize,
-                                                  contentMode: .aspectFill,
-                                                  options: nil)
+                                            targetSize: cellSize,
+                                            contentMode: .aspectFill,
+                                            options: nil)
             imageManager.stopCachingImages(for: assetsToStopCaching,
-                                                 targetSize: cellSize,
-                                                 contentMode: .aspectFill,
-                                                 options: nil)
+                                           targetSize: cellSize,
+                                           contentMode: .aspectFill,
+                                           options: nil)
             
             previousPreheatRect = preheatRect
         }
@@ -594,13 +609,13 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
         var assets: [PHAsset] = []
         assets.reserveCapacity(indexPaths.count)
         for indexPath in indexPaths {
-                let asset = fetchResult[indexPath.item]
-                assets.append(asset)
+            let asset = fetchResult[indexPath.item]
+            assets.append(asset)
         }
         return assets
     }
     
-    public func selectedMedia(photo:@escaping (_ photo: UIImage) -> Void,
+    public func selectedMedia(photo:@escaping (_ photo: UIImage, _ photos: [UIImage], _ multipleSelection: Bool) -> Void,
                               video: @escaping (_ videoURL: URL) -> Void) {
         
         // Get crop rect if cropped to square
@@ -616,40 +631,47 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
         DispatchQueue.global(qos: .userInitiated).async {
             let asset = self.phAsset!
             switch asset.mediaType {
-                case .video:
-                    if asset.duration > 60 {
-                        let alert = UIAlertController(title: fsLocalized("YPImagePickerVideoTooLongTitle"),
-                                                      message: fsLocalized("YPImagePickerVideoTooLongDetail"),
-                                                      preferredStyle: .alert)
-                        alert.addAction(UIAlertAction(title: "Ok", style: UIAlertActionStyle.default, handler: nil))
-                        self.present(alert, animated: true, completion: nil)
-                    } else {
-                        let videosOptions = PHVideoRequestOptions()
-                        videosOptions.isNetworkAccessAllowed = true
-                        self.delegate?.albumViewStartedLoadingImage()
-                        PHImageManager.default().requestAVAsset(forVideo: asset,
-                                                                options: videosOptions) { v, _, _ in
-                                                                    if let urlAsset = v as? AVURLAsset {
-                                                                        DispatchQueue.main.async {
-                                                                            self.delegate?.albumViewFinishedLoadingImage()
-                                                                            video(urlAsset.url)
-                                                                        }
+            case .video:
+                if asset.duration > 60 {
+                    let alert = UIAlertController(title: fsLocalized("YPImagePickerVideoTooLongTitle"),
+                                                  message: fsLocalized("YPImagePickerVideoTooLongDetail"),
+                                                  preferredStyle: .alert)
+                    alert.addAction(UIAlertAction(title: "Ok", style: UIAlertActionStyle.default, handler: nil))
+                    self.present(alert, animated: true, completion: nil)
+                } else {
+                    let videosOptions = PHVideoRequestOptions()
+                    videosOptions.isNetworkAccessAllowed = true
+                    self.delegate?.albumViewStartedLoadingImage()
+                    PHImageManager.default().requestAVAsset(forVideo: asset,
+                                                            options: videosOptions) { v, _, _ in
+                                                                if let urlAsset = v as? AVURLAsset {
+                                                                    DispatchQueue.main.async {
+                                                                        self.delegate?.albumViewFinishedLoadingImage()
+                                                                        video(urlAsset.url)
                                                                     }
-                        }
+                                                                }
+                    }
                 }
-                case .image:
+            case .image:
+                let options = PHImageRequestOptions()
+                options.deliveryMode = .highQualityFormat
+                options.isNetworkAccessAllowed = true
+                options.normalizedCropRect = cropRect
+                options.resizeMode = PHImageRequestOptionsResizeMode.exact
+                options.isSynchronous = true // Ok since we're already in a Backgroudn thread
+                
+                if self.enableMultipleSelection {
                     
-                    let options = PHImageRequestOptions()
-                    options.deliveryMode = .highQualityFormat
-                    options.isNetworkAccessAllowed = true
-                    options.normalizedCropRect = cropRect
-                    options.resizeMode = PHImageRequestOptionsResizeMode.exact
-                    options.isSynchronous = true // Ok since we're already in a Backgroudn thread
+                    var images = [UIImage]()
                     
-                    let targetWidth = floor(CGFloat(self.phAsset.pixelWidth) * cropRect.width)
-                    let targetHeight = floor(CGFloat(self.phAsset.pixelHeight) * cropRect.height)
-                    var targetSize = CGSize.zero
-                    switch self.configuration.libraryTargetImageSize {
+            
+                    
+                    
+                    for phAsset in self.phAssets {
+                        let targetWidth = floor(CGFloat(phAsset.pixelWidth) * cropRect.width)
+                        let targetHeight = floor(CGFloat(phAsset.pixelHeight) * cropRect.height)
+                        var targetSize = CGSize.zero
+                        switch self.configuration.libraryTargetImageSize {
                         case .original:
                             targetSize = CGSize(width: targetWidth, height: targetHeight)
                         case .cappedTo(size: let capped):
@@ -659,6 +681,41 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
                             } else {
                                 targetSize = CGSize(width: capped, height: capped)
                             }
+                        }
+//                        self.delegate?.albumViewStartedLoadingImage()
+                        PHImageManager.default()
+                            .requestImage(for: phAsset,
+                                          targetSize: targetSize,
+                                          contentMode: .aspectFit,
+                                          options: options) { result, _ in
+                                            DispatchQueue.main.async {
+//                                                self.delegate?.albumViewFinishedLoadingImage()
+                                                
+                                                images.append(result!)
+                                                if images.count == self.phAssets.count {
+                                                    photo(result!, images, true)
+                                                }
+
+                                            }
+                        }
+                    }
+                    
+                } else {
+                  
+                    
+                    let targetWidth = floor(CGFloat(self.phAsset.pixelWidth) * cropRect.width)
+                    let targetHeight = floor(CGFloat(self.phAsset.pixelHeight) * cropRect.height)
+                    var targetSize = CGSize.zero
+                    switch self.configuration.libraryTargetImageSize {
+                    case .original:
+                        targetSize = CGSize(width: targetWidth, height: targetHeight)
+                    case .cappedTo(size: let capped):
+                        // If image is smaller than limit, use original image size.
+                        if targetWidth <= capped && targetHeight <= capped {
+                            targetSize = CGSize(width: targetWidth, height: targetHeight)
+                        } else {
+                            targetSize = CGSize(width: capped, height: capped)
+                        }
                     }
                     
                     self.delegate?.albumViewStartedLoadingImage()
@@ -669,9 +726,16 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
                                       options: options) { result, _ in
                                         DispatchQueue.main.async {
                                             self.delegate?.albumViewFinishedLoadingImage()
-                                            photo(result!)
+                                            photo(result!, [result!], false)
                                         }
+                    }
                 }
+                
+                
+                
+                
+                
+                
             case .audio, .unknown:
                 ()
             }
