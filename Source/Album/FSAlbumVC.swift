@@ -77,7 +77,14 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
     
     
     //MultipleSelections
-    var enableMultipleSelection = true
+    var enableMultipleSelection = false {
+        willSet {
+            phAssets.removeAll()
+        }
+        didSet {
+            refreshMediaRequest()
+        }
+    }
     var phAssets: [PHAsset] = [PHAsset]()
     
     public override func loadView() {
@@ -147,7 +154,7 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
         v.imageCropViewContainer.layer.shadowOpacity = 0.9
         v.imageCropViewContainer.layer.shadowOffset  = CGSize.zero
         v.imageCropViewContainer.multipleSelectionEnabled = { multipleSelectionEnabled in
-            print(multipleSelectionEnabled)
+            self.enableMultipleSelection = multipleSelectionEnabled
         }
         
         v.collectionView.register(FSAlbumViewCell.self, forCellWithReuseIdentifier: "FSAlbumViewCell")
