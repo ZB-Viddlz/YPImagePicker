@@ -45,6 +45,7 @@ public class PickerVC: FSBottomPager, PagerDelegate {
     
     public var didClose:(() -> Void)?
     public var didSelectImage: ((UIImage, Bool) -> Void)?
+    public var didSelectMultipleImages: (([UIImage]) -> Void)?
     public var didSelectVideo: ((URL) -> Void)?
     
     enum Mode {
@@ -254,8 +255,13 @@ public class PickerVC: FSBottomPager, PagerDelegate {
     @objc
     func done() {
         if mode == .library {
-            albumVC.selectedMedia(photo: { img in
-                self.didSelectImage?(img, false)
+            albumVC.selectedMedia(photo: { (img, images, isMultipleSelection) in
+                if isMultipleSelection {
+                    self.didSelectMultipleImages?(images)
+                } else {
+                    self.didSelectImage?(img, false)
+                }
+                
             }, video: { videoURL in
                 self.didSelectVideo?(videoURL)
             })

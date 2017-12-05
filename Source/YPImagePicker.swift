@@ -40,11 +40,17 @@ public class YPImagePicker: UINavigationController {
 
     public var didSelectImage: ((UIImage) -> Void)?
     public var didSelectVideo: ((Data, UIImage) -> Void)?
+    public var didSelectMultipleImages: (([UIImage]) -> Void)?
     
     override public func viewDidLoad() {
         super.viewDidLoad()
         viewControllers = [picker]
         navigationBar.isTranslucent = false
+        
+        picker.didSelectMultipleImages = { [unowned self] images in
+            self.didSelectMultipleImages?(images)
+        }
+        
         picker.didSelectImage = { [unowned self] pickedImage, isNewPhoto in
             if self.configuration.showsFilters {
                 let filterVC = FiltersVC(image:pickedImage)
