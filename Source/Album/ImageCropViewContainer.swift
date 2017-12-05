@@ -20,6 +20,11 @@ class ImageCropViewContainer: UIView, FSImageCropViewDelegate, UIGestureRecogniz
     let spinnerView = UIView()
     let spinner = UIActivityIndicatorView(activityIndicatorStyle: .white)
     let squareCropButton = UIButton()
+    
+    let multipleSelectionButton = UIButton()
+    var isMultipleImageSelected = false
+    var multipleSelectionEnabled: ((Bool) -> Void)?
+    
     var isVideoMode = false {
         didSet {
             self.cropView?.isVideoMode = isVideoMode
@@ -42,6 +47,15 @@ class ImageCropViewContainer: UIView, FSImageCropViewDelegate, UIGestureRecogniz
         }
         cropView?.setFitImage(shouldCropToSquare)
     }
+    
+    @objc
+    func multipleImageSelected() {
+        isMultipleImageSelected = !isMultipleImageSelected
+        let purpleColor = UIColor(red: 163.0 / 255.0, green: 132.0 / 255.0, blue: 228.0 / 255.0, alpha: 1.0)
+        multipleSelectionButton.tintColor = isMultipleImageSelected ? purpleColor : UIColor.white
+        multipleSelectionEnabled?(isMultipleImageSelected)
+    }
+    
     
     func refresh() {
         refreshSquareCropButton()
@@ -101,6 +115,19 @@ class ImageCropViewContainer: UIView, FSImageCropViewDelegate, UIGestureRecogniz
         spinnerView.backgroundColor = UIColor.black.withAlphaComponent(0.5)
         curtain.backgroundColor = UIColor.black.withAlphaComponent(0.5)
         curtain.alpha = 0
+        
+        
+        let image = imageFromBundle("layers").withRenderingMode(.alwaysTemplate)
+        multipleSelectionButton.setImage(image, for: .normal)
+        sv(multipleSelectionButton)
+        multipleSelectionButton.size(42)
+        multipleSelectionButton-15-|
+        multipleSelectionButton.Bottom == cropView!.Bottom - 15
+        multipleSelectionButton.tintColor = UIColor.white
+        
+        multipleSelectionButton.backgroundColor = UIColor.black.withAlphaComponent(0.2)
+        multipleSelectionButton.layer.cornerRadius = 21
+        multipleSelectionButton.addTarget(self, action: #selector(multipleImageSelected), for: .touchUpInside)
         
         if !onlySquareImages {
             // Crop Button
