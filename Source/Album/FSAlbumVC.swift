@@ -78,14 +78,13 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
     
     //MultipleSelections
     var enableMultipleSelection = false {
-        willSet {
-            phAssets.removeAll()
-        }
         didSet {
+            phAssets.removeAll()
             refreshMediaRequest()
         }
     }
     var phAssets: [PHAsset] = [PHAsset]()
+    var maxPhotosLimitForMultipleSelection = 10
     
     public override func loadView() {
         let bundle = Bundle(for: self.classForCoder)
@@ -188,13 +187,18 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
         }
         
         if fetchResult.count > 0 {
+            if enableMultipleSelection {
+                phAssets.append(fetchResult.firstObject!)
+            }
             changeImage(fetchResult[0])
             v.collectionView.reloadData()
             v.collectionView.selectItem(at: IndexPath(row: 0, section: 0),
                                         animated: false,
                                         scrollPosition: UICollectionViewScrollPosition())
         }
-        scrollToTop()
+        
+         scrollToTop()
+        
     }
     
     func scrollToTop() {
@@ -338,9 +342,18 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
                                     }
         }
         
-        let isVideo = (asset.mediaType == .video)
-        cell.durationLabel.isHidden = !isVideo
-        cell.durationLabel.text = isVideo ? formattedStrigFrom(asset.duration) : ""
+//        let isVideo = (asset.mediaType == .video)
+        cell.durationLabel.isHidden = false
+        cell.durationLabel.text = ""
+      
+        if enableMultipleSelection && phAssets.contains(asset) {
+            cell.isHighlighted = false
+            if let index = phAssets.index(of: asset){
+               cell.durationLabel.text = String(index + 1)
+                cell.isHighlighted = true
+            }
+           
+        }
         
         // Prevent weird animation where thumbnail fills cell on first scrolls.
         UIView.performWithoutAnimation {
@@ -368,7 +381,18 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
     var previouslySelectedIndex: Int?
     
     public func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        if indexPath.row == previouslySelectedIndex {
+        if indexPath.row == previouslySelectedIndex && !enableMultipleSelection{
+            return
+        }
+        
+        if enableMultipleSelection && phAssets.count == maxPhotosLimitForMultipleSelection {
+            let asset = fetchResult[indexPath.row]
+            if let index = phAssets.index(of: asset) {
+                phAssets.remove(at: index)
+                v.collectionView.reloadData()
+            }
+            guard let cell = collectionView.cellForItem(at: indexPath) as? FSAlbumViewCell else { return }
+            cell.isHighlighted = false
             return
         }
         changeImage(fetchResult[indexPath.row])
@@ -381,6 +405,23 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
         refreshImageCurtainAlpha()
         
         previouslySelectedIndex = indexPath.row
+        
+        if enableMultipleSelection {
+            let asset = fetchResult[indexPath.row]
+            
+            if !phAssets.contains(asset) {
+                phAssets.append(asset)
+                guard let cell = collectionView.cellForItem(at: indexPath) as? FSAlbumViewCell else { return }
+                cell.durationLabel.isHidden = false
+                cell.durationLabel.text = String(phAssets.count)
+            } else {
+                if let index = phAssets.index(of: asset) {
+                    phAssets.remove(at: index)
+                }
+            }
+            v.collectionView.reloadData()
+        }
+       
     }
     
     // MARK: - ScrollViewDelegate
@@ -426,13 +467,7 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
     
     func changeImage(_ asset: PHAsset) {
         phAsset = asset
-        if enableMultipleSelection {
-            if !phAssets.contains(asset) {
-                phAssets.append(asset)
-            }
-        }
-        
-        
+       
         latestImageTapped = asset.localIdentifier
         v.imageCropViewContainer.isVideoMode = asset.mediaType == .video
         
