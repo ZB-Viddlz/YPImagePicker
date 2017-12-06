@@ -52,7 +52,7 @@ class ImageCropViewContainer: UIView, FSImageCropViewDelegate, UIGestureRecogniz
     func multipleImageSelected() {
         isMultipleImageSelected = !isMultipleImageSelected
         let purpleColor = UIColor(red: 163.0 / 255.0, green: 132.0 / 255.0, blue: 228.0 / 255.0, alpha: 1.0)
-        multipleSelectionButton.tintColor = isMultipleImageSelected ? purpleColor : UIColor.white
+        multipleSelectionButton.backgroundColor = isMultipleImageSelected ? purpleColor : UIColor.black.withAlphaComponent(0.2)
         multipleSelectionEnabled?(isMultipleImageSelected)
     }
     
@@ -95,7 +95,7 @@ class ImageCropViewContainer: UIView, FSImageCropViewDelegate, UIGestureRecogniz
         touchDownGR.delegate = self
         
         let singleTapGR = UITapGestureRecognizer(target: self,
-                                                            action: #selector(singleTap))
+                                                 action: #selector(singleTap))
         singleTapGR.numberOfTapsRequired = 1
         singleTapGR.delegate = self
         addGestureRecognizer(singleTapGR)
@@ -132,7 +132,7 @@ class ImageCropViewContainer: UIView, FSImageCropViewDelegate, UIGestureRecogniz
         if !onlySquareImages {
             // Crop Button
             squareCropButton.setImage(imageFromBundle("yp_iconCrop"), for: .normal)
-            sv(squareCropButton)
+            //            sv(squareCropButton)
             squareCropButton.size(42)
             |-15-squareCropButton
             squareCropButton.Bottom == cropView!.Bottom - 15
@@ -149,12 +149,12 @@ class ImageCropViewContainer: UIView, FSImageCropViewDelegate, UIGestureRecogniz
     }
     
     public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith
-                                  otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        otherGestureRecognizer: UIGestureRecognizer) -> Bool {
         return true
     }
     
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
-         return !(touch.view is UIButton)
+        return !(touch.view is UIButton)
     }
     
     @objc
