@@ -342,14 +342,16 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
                                     }
         }
         
-//        let isVideo = (asset.mediaType == .video)
-        cell.durationLabel.isHidden = false
-        cell.durationLabel.text = ""
-      
+        let isVideo = (asset.mediaType == .video)
+        cell.durationLabel.isHidden = !isVideo
+        cell.durationLabel.text = isVideo ? formattedStrigFrom(asset.duration) : ""
+        
+        cell.resetConuter()
+      cell.counterContainer.isHidden = !enableMultipleSelection
         if enableMultipleSelection && phAssets.contains(asset) {
             cell.isHighlighted = false
-            if let index = phAssets.index(of: asset){
-               cell.durationLabel.text = String(index + 1)
+            if let index = phAssets.index(of: asset) {
+                cell.setCounter(to: index + 1)
                 cell.isHighlighted = true
             }
            
@@ -412,8 +414,7 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
             if !phAssets.contains(asset) {
                 phAssets.append(asset)
                 guard let cell = collectionView.cellForItem(at: indexPath) as? FSAlbumViewCell else { return }
-                cell.durationLabel.isHidden = false
-                cell.durationLabel.text = String(phAssets.count)
+                cell.setCounter(to: phAssets.count)
             } else {
                 if let index = phAssets.index(of: asset) {
                     phAssets.remove(at: index)
