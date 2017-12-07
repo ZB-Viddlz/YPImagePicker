@@ -79,11 +79,13 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
     //MultipleSelections
     var enableMultipleSelection = false {
         didSet {
+            cropRects.removeAll()
             phAssets.removeAll()
             refreshMediaRequest()
         }
     }
     var phAssets: [PHAsset] = [PHAsset]()
+    var cropRects: [CGRect] = [CGRect]()
     var maxPhotosLimitForMultipleSelection = 10
     
     public override func loadView() {
@@ -383,6 +385,8 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
     var previouslySelectedIndex: Int?
     
     public func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        
+        let currentRect = getCropRect()
         if indexPath.row == previouslySelectedIndex && !enableMultipleSelection{
             return
         }
@@ -390,6 +394,10 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
         if enableMultipleSelection && phAssets.count == maxPhotosLimitForMultipleSelection {
             let asset = fetchResult[indexPath.row]
             if let index = phAssets.index(of: asset) {
+                let isIndexValid = self.cropRects.indices.contains(index)
+                if isIndexValid {
+                    cropRects.remove(at: index)
+                }
                 phAssets.remove(at: index)
                 v.collectionView.reloadData()
             }
@@ -397,6 +405,7 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
             cell.isHighlighted = false
             return
         }
+        
         changeImage(fetchResult[indexPath.row])
         v.imageCropViewConstraintTop.constant = imageCropViewOriginalConstraintTop
         UIView.animate(withDuration: 0.2, delay: 0.0, options: UIViewAnimationOptions.curveEaseOut, animations: {
@@ -412,11 +421,22 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
             let asset = fetchResult[indexPath.row]
             
             if !phAssets.contains(asset) {
+                if cropRects.count < phAssets.count {
+                    cropRects.append(currentRect)
+                }
                 phAssets.append(asset)
+                
+               
+                
                 guard let cell = collectionView.cellForItem(at: indexPath) as? FSAlbumViewCell else { return }
                 cell.setCounter(to: phAssets.count)
             } else {
                 if let index = phAssets.index(of: asset) {
+                    let isIndexValid = self.cropRects.indices.contains(index)
+                    if isIndexValid {
+                       cropRects.remove(at: index)
+                    }
+                    
                     phAssets.remove(at: index)
                 }
             }
@@ -658,10 +678,7 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
         return assets
     }
     
-    public func selectedMedia(photo:@escaping (_ photo: UIImage, _ photos: [UIImage], _ multipleSelection: Bool) -> Void,
-                              video: @escaping (_ videoURL: URL) -> Void) {
-        
-        // Get crop rect if cropped to square
+    func getCropRect() -> CGRect {
         var cropRect = CGRect.zero
         if let cropView = v.imageCropView {
             let normalizedX = min(1, cropView.contentOffset.x / cropView.contentSize.width)
@@ -671,7 +688,16 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
             cropRect = CGRect(x: normalizedX, y: normalizedY, width: normalizedWidth, height: normalizedHeight)
         }
         
-        DispatchQueue.global(qos: .userInitiated).async {
+        return cropRect
+    }
+    
+    public func selectedMedia(photo:@escaping (_ photo: UIImage, _ photos: [UIImage], _ multipleSelection: Bool) -> Void,
+                              video: @escaping (_ videoURL: URL) -> Void) {
+        
+        // Get crop rect if cropped to square
+        var cropRect = getCropRect()
+        
+        DispatchQueue.main.async {
             let asset = self.phAsset!
             switch asset.mediaType {
             case .video:
@@ -706,11 +732,19 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
                 if self.enableMultipleSelection {
                     
                     var images = [UIImage]()
+                    if self.cropRects.count < self.phAssets.count {
+                        self.cropRects.append(cropRect)
+                    }
                     
-            
                     
-                    
-                    for phAsset in self.phAssets {
+                    for (index, phAsset)  in self.phAssets.enumerated() {
+                        let isIndexValid = self.cropRects.indices.contains(index)
+                        if isIndexValid {
+                            cropRect = self.cropRects[index]
+                        }
+                        
+                        options.normalizedCropRect = cropRect
+                        
                         let targetWidth = floor(CGFloat(phAsset.pixelWidth) * cropRect.width)
                         let targetHeight = floor(CGFloat(phAsset.pixelHeight) * cropRect.height)
                         var targetSize = CGSize.zero
@@ -725,17 +759,16 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
                                 targetSize = CGSize(width: capped, height: capped)
                             }
                         }
-//                        self.delegate?.albumViewStartedLoadingImage()
+                        self.delegate?.albumViewStartedLoadingImage()
                         PHImageManager.default()
                             .requestImage(for: phAsset,
                                           targetSize: targetSize,
                                           contentMode: .aspectFit,
                                           options: options) { result, _ in
                                             DispatchQueue.main.async {
-//                                                self.delegate?.albumViewFinishedLoadingImage()
-                                                
                                                 images.append(result!)
                                                 if images.count == self.phAssets.count {
+                                                    self.delegate?.albumViewFinishedLoadingImage()
                                                     photo(result!, images, true)
                                                 }
 
