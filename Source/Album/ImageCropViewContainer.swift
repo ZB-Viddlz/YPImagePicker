@@ -132,7 +132,7 @@ class ImageCropViewContainer: UIView, FSImageCropViewDelegate, UIGestureRecogniz
         if !onlySquareImages {
             // Crop Button
             squareCropButton.setImage(imageFromBundle("yp_iconCrop"), for: .normal)
-            //            sv(squareCropButton)
+            sv(squareCropButton)
             squareCropButton.size(42)
             |-15-squareCropButton
             squareCropButton.Bottom == cropView!.Bottom - 15
