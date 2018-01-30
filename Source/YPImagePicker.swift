@@ -41,6 +41,7 @@ public class YPImagePicker: UINavigationController {
     public var didSelectImage: ((UIImage) -> Void)?
     public var didSelectVideo: ((Data, UIImage) -> Void)?
     public var didSelectMultipleImages: (([UIImage]) -> Void)?
+    public var onCancel: (() -> Void)?
     
     override public func viewDidLoad() {
         super.viewDidLoad()
@@ -109,6 +110,11 @@ public class YPImagePicker: UINavigationController {
                 }
             }
         }
+    }
+
+    public func close() {
+        picker.onCancel = nil
+        picker.close()
     }
 }
 

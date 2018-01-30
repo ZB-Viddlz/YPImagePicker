@@ -47,7 +47,8 @@ public class PickerVC: FSBottomPager, PagerDelegate {
     public var didSelectImage: ((UIImage, Bool) -> Void)?
     public var didSelectMultipleImages: (([UIImage]) -> Void)?
     public var didSelectVideo: ((URL) -> Void)?
-    
+    public var onCancel: (() -> Void)?
+
     enum Mode {
         case library
         case camera
@@ -247,8 +248,12 @@ public class PickerVC: FSBottomPager, PagerDelegate {
     
     @objc
     func close() {
-        dismiss(animated: true) {
-            self.didClose?()
+        if onCancel != nil {
+            onCancel?()
+        } else {
+            dismiss(animated: true) {
+                self.didClose?()
+            }
         }
     }
     
