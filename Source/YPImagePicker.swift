@@ -47,6 +47,8 @@ public class YPImagePicker: UINavigationController {
         super.viewDidLoad()
         viewControllers = [picker]
         navigationBar.isTranslucent = false
+
+        picker.onCancel = onCancel
         
         picker.didSelectMultipleImages = { [unowned self] images in
             self.didSelectMultipleImages?(images)
