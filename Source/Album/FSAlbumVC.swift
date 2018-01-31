@@ -34,7 +34,7 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
     
     private var fetchResult: PHFetchResult<PHAsset>!
     
-    let imageManager = PHCachingImageManager()
+    var imageManager: PHCachingImageManager?
     var previousPreheatRect: CGRect = CGRect.zero
     let cellSize = CGSize(width: UIScreen.main.bounds.width/4, height: UIScreen.main.bounds.width/4)
     var phAsset: PHAsset!
@@ -110,6 +110,10 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
             .addTarget(self,
                        action: #selector(squareCropButtonTapped),
                        for: .touchUpInside)
+        
+        if configuration.startOnScreen == .library {
+            checkPermission()
+        }
     }
     
     @objc
@@ -170,6 +174,8 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
     }
     
     func initialize() {
+        imageManager = PHCachingImageManager()
+        
         if fetchResult != nil {
             return
         }
@@ -370,7 +376,7 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
                                                                 fatalError("unexpected cell in collection view")
         }
         cell.representedAssetIdentifier = asset.localIdentifier
-        imageManager.requestImage(for: asset,
+        imageManager?.requestImage(for: asset,
                                   targetSize: cellSize,
                                   contentMode: .aspectFill,
                                   options: nil) { image, _ in
@@ -537,7 +543,7 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
             DispatchQueue.global(qos: .default).async {
                 let options = PHImageRequestOptions()
                 options.isNetworkAccessAllowed = true
-                self.imageManager.requestImage(for: asset,
+                self.imageManager?.requestImage(for: asset,
                                                targetSize: CGSize(width: asset.pixelWidth, height: asset.pixelHeight),
                                                contentMode: .aspectFill,
                                                options: options) { result, info in
@@ -554,13 +560,16 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
                                                                 self.v.imageCropViewContainer.spinnerView.alpha = 0
                                                             }
                                                         }
-                                                        
-                                                        self.v.imageCropView.imageSize = CGSize(width: asset.pixelWidth, height: asset.pixelHeight)
+                                                    
+                                                        self.v.imageCropView.imageSize = CGSize(
+                                                            width: asset.pixelWidth,
+                                                            height: asset.pixelHeight)
                                                         self.v.imageCropView.image = result
                                                         
                                                         if self.configuration.onlySquareImagesFromLibrary {
                                                             self.v.imageCropView.setFitImage(true)
-                                                            self.v.imageCropView.minimumZoomScale = self.v.imageCropView.squaredZoomScale
+                                                            self.v.imageCropView.minimumZoomScale =
+                                                                self.v.imageCropView.squaredZoomScale
                                                         }
                                                         self.v.imageCropViewContainer.refreshSquareCropButton()
                                                     }
@@ -582,15 +591,17 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
                 options.isNetworkAccessAllowed = true
                 options.deliveryMode = .opportunistic
                 let screenWidth = UIScreen.main.bounds.width
-                self.imageManager.requestImage(for: asset,
+                self.imageManager?.requestImage(for: asset,
                                                targetSize: CGSize(width: screenWidth, height: screenWidth),
                                                contentMode: .aspectFill,
                                                options: options) { result, _ in
-                                                // Prevent long images to come after user selected another in the meantime.
+                                                // Prevent long images to come after user selected
+                                                // another in the meantime.
                                                 if self.latestImageTapped == asset.localIdentifier {
                                                     DispatchQueue.main.async {
                                                         self.v.imageCropView.image = result
-                                                        self.v.imageCropViewContainer.cropView?.setFitImage(true, animated: false)
+                                                        self.v.imageCropViewContainer.cropView?
+                                                            .setFitImage(true, animated: false)
                                                     }
                                                 }
                 }
@@ -599,7 +610,7 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
                 let videosOptions = PHVideoRequestOptions()
                 videosOptions.deliveryMode = PHVideoRequestOptionsDeliveryMode.automatic
                 videosOptions.isNetworkAccessAllowed = true
-                PHImageManager.default().requestPlayerItem(forVideo: asset,
+                self.imageManager?.requestPlayerItem(forVideo: asset,
                                                            options: videosOptions,
                                                            resultHandler: { playerItem, _ in
                                                             // Prevent long videos to come after user selected another in the meantime.
@@ -622,7 +633,7 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
     // MARK: - Asset Caching
     
     func resetCachedAssets() {
-        imageManager.stopCachingImagesForAllAssets()
+        imageManager?.stopCachingImagesForAllAssets()
         previousPreheatRect = .zero
     }
     
@@ -649,11 +660,11 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
             let assetsToStartCaching = assetsAtIndexPaths(addedIndexPaths)
             let assetsToStopCaching = assetsAtIndexPaths(removedIndexPaths)
             
-            imageManager.startCachingImages(for: assetsToStartCaching,
+            imageManager?.startCachingImages(for: assetsToStartCaching,
                                             targetSize: cellSize,
                                             contentMode: .aspectFill,
                                             options: nil)
-            imageManager.stopCachingImages(for: assetsToStopCaching,
+            imageManager?.stopCachingImages(for: assetsToStopCaching,
                                            targetSize: cellSize,
                                            contentMode: .aspectFill,
                                            options: nil)
@@ -729,6 +740,83 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
         
         return cropRect
     }
+
+    public func selectedMedia(photo:@escaping (_ photo: UIImage) -> Void,
+                              video: @escaping (_ videoURL: URL) -> Void) {
+        
+        // Get crop rect if cropped to square
+        var cropRect = CGRect.zero
+        if let cropView = v.imageCropView {
+            let normalizedX = min(1, cropView.contentOffset.x / cropView.contentSize.width)
+            let normalizedY = min(1, cropView.contentOffset.y / cropView.contentSize.height)
+            let normalizedWidth = min(1, cropView.frame.width / cropView.contentSize.width)
+            let normalizedHeight = min(1, cropView.frame.height / cropView.contentSize.height)
+            cropRect = CGRect(x: normalizedX, y: normalizedY, width: normalizedWidth, height: normalizedHeight)
+        }
+        
+        DispatchQueue.global(qos: .userInitiated).async {
+            let asset = self.phAsset!
+            switch asset.mediaType {
+            case .video:
+                if asset.duration > 60 {
+                    let alert = UIAlertController(title: fsLocalized("YPImagePickerVideoTooLongTitle"),
+                                                  message: fsLocalized("YPImagePickerVideoTooLongDetail"),
+                                                  preferredStyle: .alert)
+                    alert.addAction(UIAlertAction(title: "Ok", style: UIAlertActionStyle.default, handler: nil))
+                    self.present(alert, animated: true, completion: nil)
+                } else {
+                    let videosOptions = PHVideoRequestOptions()
+                    videosOptions.isNetworkAccessAllowed = true
+                    self.delegate?.albumViewStartedLoadingImage()
+                    self.imageManager?.requestAVAsset(forVideo: asset,
+                                                      options: videosOptions) { v, _, _ in
+                                                        if let urlAsset = v as? AVURLAsset {
+                                                            DispatchQueue.main.async {
+                                                                self.delegate?.albumViewFinishedLoadingImage()
+                                                                video(urlAsset.url)
+                                                            }
+                                                        }
+                    }
+                }
+            case .image:
+                let options = PHImageRequestOptions()
+                options.deliveryMode = .highQualityFormat
+                options.isNetworkAccessAllowed = true
+                options.normalizedCropRect = cropRect
+                options.resizeMode = PHImageRequestOptionsResizeMode.exact
+                options.isSynchronous = true // Ok since we're already in a Backgroudn thread
+                
+                let targetWidth = floor(CGFloat(self.phAsset.pixelWidth) * cropRect.width)
+                let targetHeight = floor(CGFloat(self.phAsset.pixelHeight) * cropRect.height)
+                var targetSize = CGSize.zero
+                switch self.configuration.libraryTargetImageSize {
+                case .original:
+                    targetSize = CGSize(width: targetWidth, height: targetHeight)
+                case .cappedTo(size: let capped):
+                    // If image is smaller than limit, use original image size.
+                    if targetWidth <= capped && targetHeight <= capped {
+                        targetSize = CGSize(width: targetWidth, height: targetHeight)
+                    } else {
+                        targetSize = CGSize(width: capped, height: capped)
+                    }
+                }
+                
+                self.delegate?.albumViewStartedLoadingImage()
+                self.imageManager?
+                    .requestImage(for: asset,
+                                  targetSize: targetSize,
+                                  contentMode: .aspectFit,
+                                  options: options) { result, _ in
+                                    DispatchQueue.main.async {
+                                        self.delegate?.albumViewFinishedLoadingImage()
+                                        photo(result!)
+                                    }
+                }
+            case .audio, .unknown:
+                ()
+            }
+        }
+    }
     
     public func selectedMedia(photo:@escaping (_ photo: UIImage, _ photos: [UIImage], _ multipleSelection: Bool) -> Void,
                               video: @escaping (_ videoURL: URL) -> Void) {
@@ -756,7 +844,45 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
                                                                     DispatchQueue.main.async {
                                                                         self.delegate?.albumViewFinishedLoadingImage()
                                                                         video(urlAsset.url)
-                                                                    }
+                    self.imageManager?.requestAVAsset(forVideo: asset,
+                                                      options: videosOptions) { v, _, _ in
+                                                        if let urlAsset = v as? AVURLAsset {
+                                                            DispatchQueue.main.async {
+                                                                self.delegate?.albumViewFinishedLoadingImage()
+                                                                video(urlAsset.url)
+                                                            }
+                                                        }
+                    }
+                }
+            case .image:
+                let options = PHImageRequestOptions()
+                options.deliveryMode = .highQualityFormat
+                options.isNetworkAccessAllowed = true
+                options.normalizedCropRect = cropRect
+                options.resizeMode = PHImageRequestOptionsResizeMode.exact
+                options.isSynchronous = true // Ok since we're already in a Backgroudn thread
+                
+                let targetWidth = floor(CGFloat(self.phAsset.pixelWidth) * cropRect.width)
+                let targetHeight = floor(CGFloat(self.phAsset.pixelHeight) * cropRect.height)
+                var targetSize = CGSize.zero
+                switch self.configuration.libraryTargetImageSize {
+                case .original:
+                    targetSize = CGSize(width: targetWidth, height: targetHeight)
+                case .cappedTo(size: let capped):
+                    // If image is smaller than limit, use original image size.
+                    if targetWidth <= capped && targetHeight <= capped {
+                        targetSize = CGSize(width: targetWidth, height: targetHeight)
+                        let videosOptions = PHVideoRequestOptions()
+                        videosOptions.isNetworkAccessAllowed = true
+                        self.delegate?.albumViewStartedLoadingImage()
+                        PHImageManager.default().requestAVAsset(forVideo: asset,
+                                                                options: videosOptions) { v, _, _ in
+                                                                    if let urlAsset = v as? AVURLAsset {
+                                                                        DispatchQueue.main.async {
+                                                                            self.delegate?.albumViewFinishedLoadingImage()
+                                                                            video(urlAsset.url)
+                                                                        }
+                        targetSize = CGSize(width: capped, height: capped)
                                                                 }
                     }
                 }
@@ -846,11 +972,56 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
                     }
                 }
                 
+                    
+                    let options = PHImageRequestOptions()
+                    options.deliveryMode = .highQualityFormat
+                    options.isNetworkAccessAllowed = true
+                    options.normalizedCropRect = cropRect
+                    options.resizeMode = PHImageRequestOptionsResizeMode.exact
+                    options.isSynchronous = true // Ok since we're already in a Backgroudn thread
+                    
+                    let targetWidth = floor(CGFloat(self.phAsset.pixelWidth) * cropRect.width)
+                    let targetHeight = floor(CGFloat(self.phAsset.pixelHeight) * cropRect.height)
+                    var targetSize = CGSize.zero
+                    switch self.configuration.libraryTargetImageSize {
+                        case .original:
+                            targetSize = CGSize(width: targetWidth, height: targetHeight)
+                        case .cappedTo(size: let capped):
+                            // If image is smaller than limit, use original image size.
+                            if targetWidth <= capped && targetHeight <= capped {
+                                targetSize = CGSize(width: targetWidth, height: targetHeight)
+                            } else {
+                                targetSize = CGSize(width: capped, height: capped)
+                            }
+                    }
+                    
+                    self.delegate?.albumViewStartedLoadingImage()
+                    PHImageManager.default()
+                        .requestImage(for: asset,
+                                      targetSize: targetSize,
+                                      contentMode: .aspectFit,
+                                      options: options) { result, _ in
+                                        DispatchQueue.main.async {
+                                            self.delegate?.albumViewFinishedLoadingImage()
+                                            photo(result!)
+                                        }
+                }
                 
                 
                 
                 
                 
+                self.delegate?.albumViewStartedLoadingImage()
+                self.imageManager?
+                    .requestImage(for: asset,
+                                  targetSize: targetSize,
+                                  contentMode: .aspectFit,
+                                  options: options) { result, _ in
+                                    DispatchQueue.main.async {
+                                        self.delegate?.albumViewFinishedLoadingImage()
+                                        photo(result!)
+                                    }
+                }
             case .audio, .unknown:
                 ()
             }
