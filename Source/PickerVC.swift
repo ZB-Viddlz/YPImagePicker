@@ -281,13 +281,13 @@ public class PickerVC: FSBottomPager, PagerDelegate {
             albumVC.doAfterPermissionCheck { [weak self] in
                 self?.albumVC.selectedMedia(photo: { (img, images, isMultipleSelection) in
                     if isMultipleSelection {
-                        self.didSelectMultipleImages?(images)
+                        self?.didSelectMultipleImages?(images)
                     } else {
-                        self.didSelectImage?(img, false)
+                        self?.didSelectImage?(img, false)
                     }
 
                 }, video: { videoURL in
-                    self.didSelectVideo?(videoURL)
+                    self?.didSelectVideo?(videoURL)
                 })
             }
         }
