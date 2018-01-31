@@ -36,7 +36,8 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
     
     var imageManager: PHCachingImageManager?
     var previousPreheatRect: CGRect = CGRect.zero
-    let cellSize = CGSize(width: UIScreen.main.bounds.width/4, height: UIScreen.main.bounds.width/4)
+    let cellSize = CGSize(width: UIScreen.main.bounds.width/4 * UIScreen.main.scale,
+                          height: UIScreen.main.bounds.width/4 * UIScreen.main.scale)
     var phAsset: PHAsset!
     
     // Variables for calculating the position
@@ -111,9 +112,6 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
                        action: #selector(squareCropButtonTapped),
                        for: .touchUpInside)
         
-        if configuration.startOnScreen == .library {
-            checkPermission()
-        }
     }
     
     @objc

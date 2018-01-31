@@ -104,7 +104,13 @@ public class FSCameraVC: UIViewController, UIGestureRecognizerDelegate {
         animateFocusView(focusView)
     }
     
-    func startCamera() {
+    public func tryToStartCamera() {
+        doAfterPermissionCheck { [weak self] in
+            self?.startCamera()
+        }
+    }
+    
+    private func startCamera() {
         if !session.isRunning {
             sessionQueue.async { [unowned self] in
                 // Re-apply session preset
@@ -122,8 +128,8 @@ public class FSCameraVC: UIViewController, UIGestureRecognizerDelegate {
     
     func stopCamera() {
         if session.isRunning {
-            sessionQueue.async { [unowned self] in
-                self.session.stopRunning()
+            sessionQueue.async { [weak self] in
+                self?.session.stopRunning()
             }
         }
     }
@@ -136,15 +142,19 @@ public class FSCameraVC: UIViewController, UIGestureRecognizerDelegate {
     }
     
     func flip() {
-        sessionQueue.async { [unowned self] in
-            self.session.resetInputs()
-            self.videoInput = flippedDeviceInputForInput(self.videoInput)
-            if self.session.canAddInput(self.videoInput) {
-                self.session.addInput(self.videoInput)
-            }
-            DispatchQueue.main.async {
-                self.refreshFlashButton()
-            }
+        sessionQueue.async { [weak self] in
+            self?.flipCamera()
+        }
+    }
+    
+    private func flipCamera() {
+        session.resetInputs()
+        videoInput = flippedDeviceInputForInput(videoInput)
+        if session.canAddInput(videoInput) {
+            session.addInput(videoInput)
+        }
+        DispatchQueue.main.async {
+            self.refreshFlashButton()
         }
     }
 

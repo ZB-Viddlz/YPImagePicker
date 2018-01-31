@@ -13,28 +13,10 @@ final class PagerMenu: UIView {
     
     var didSetConstraints = false
     var menuItems = [MenuItem]()
-    var selector = UIView()
-    var separator = UIView()
     
     convenience init() {
         self.init(frame: .zero)
         backgroundColor = UIColor(r: 247, g: 247, b: 247)
-        
-        sv(
-            separator,
-            selector
-        )
-        
-        layout(
-            |separator| ~ 0.5,
-            0
-        )
-        
-        layout(
-            |selector.width(300) ~ 1,
-            0.5
-        )
-        separator.backgroundColor = UIColor(r: 167, g: 167, b: 167)
     }
     
     var separators = [UIView]()
@@ -43,30 +25,18 @@ final class PagerMenu: UIView {
         let menuItemWidth: CGFloat = UIScreen.main.bounds.width / CGFloat(menuItems.count)
         var previousMenuItem: MenuItem?
         for m in menuItems {
-            addSubview(m)
-            m.translatesAutoresizingMaskIntoConstraints = false
-            addConstraint(item: m, attribute: .top, toItem: self)
-            addConstraint(item: m, attribute: .height, toItem: self)
-            addConstraint(item: m, attribute: .width, constant: menuItemWidth)
+            
+            sv(
+                m
+            )
+
+            m.fillVertically().width(menuItemWidth)
             if let pm = previousMenuItem {
-                addConstraint(item: m, attribute: .left, toItem: pm, attribute: .right)
+                pm-0-m
             } else {
-                addConstraint(item: m, attribute: .left, toItem: self)
+                |m
             }
-            
-            if let previousMenuItem = previousMenuItem {
-                //Add separator next to it
-                let separator = UIView()
-                addSubview(separator)
-                separator.translatesAutoresizingMaskIntoConstraints = false
-                separator.backgroundColor = .clear
-                addConstraint(item: separator, attribute: .width, constant: 1)
-                addConstraint(item: separator, attribute: .left, toItem: previousMenuItem,
-                              attribute: .right)
-                addConstraint(item: separator, attribute: .top, toItem: self, constant: 7)
-                addConstraint(item: separator, attribute: .bottom, toItem: self, constant: -7)
-            }
-            
+                        
             previousMenuItem = m
         }
     }
@@ -180,23 +150,21 @@ final class PagerView: UIView {
             0,
             |scrollView|,
             0,
-            |header| ~ 50,
-            0
+            |header| ~ 50
         )
         
+        if #available(iOS 11.0, *) {
+            header.Bottom == safeAreaLayoutGuide.Bottom
+        } else {
+            header.bottom(0)
+        }
+
         clipsToBounds = false
         scrollView.clipsToBounds = false
         scrollView.isPagingEnabled = true
         scrollView.showsHorizontalScrollIndicator = false
         scrollView.scrollsToTop = false
         scrollView.bounces = false
-    }
-    
-    func animateSelectorToPage(_ page: Int) {
-        let menuItemWidth: CGFloat = UIScreen.main.bounds.width
-            / CGFloat(header.menuItems.count)
-        header.selector.leftConstraint?.constant = CGFloat(page) * menuItemWidth
-        UIView.animate(withDuration: 0.2, animations: layoutIfNeeded)
     }
 }
 
@@ -215,14 +183,14 @@ public class FSBottomPager: UIViewController, UIScrollViewDelegate {
     
     var currentPage = 0
     
+    var currentController: UIViewController {
+        return controllers[currentPage]
+    }
+    
     override public func loadView() {
         self.automaticallyAdjustsScrollViewInsets = false
         v.scrollView.delegate = self
         view = v
-    }
-    
-    public func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
-        v.animateSelectorToPage(currentPage)
     }
     
     public func scrollViewDidScroll(_ scrollView: UIScrollView) {
@@ -270,9 +238,6 @@ public class FSBottomPager: UIViewController, UIScrollViewDelegate {
         let currentMenuItem = v.header.menuItems[0]
         currentMenuItem.select()
         v.header.refreshMenuItems()
-        
-        //Adjsut seletor size
-        v.header.selector.widthConstraint?.constant = v.frame.width / CGFloat(controllers.count)
     }
     
     @objc
@@ -281,26 +246,26 @@ public class FSBottomPager: UIViewController, UIScrollViewDelegate {
     }
     
     func showPage(_ page: Int, animated: Bool = true) {
-        v.animateSelectorToPage(page)
         let x = CGFloat(page) * UIScreen.main.bounds.width
         v.scrollView.setContentOffset(CGPoint(x: x, y: 0), animated: animated)
         selectPage(page)
     }
     
     func selectPage(_ page: Int) {
-        currentPage = page
-        //select menut item and deselect others
-        for mi in v.header.menuItems {
-            mi.unselect()
+        if page != currentPage {
+            currentPage = page
+            //select menut item and deselect others
+            for mi in v.header.menuItems {
+                mi.unselect()
+            }
+            let currentMenuItem = v.header.menuItems[page]
+            currentMenuItem.select()
+            delegate?.pagerDidSelectController(controllers[page])
         }
-        let currentMenuItem = v.header.menuItems[page]
-        currentMenuItem.select()
-        delegate?.pagerDidSelectController(controllers[page])
     }
     
     func startOnPage(_ page: Int) {
         currentPage = page
-        v.animateSelectorToPage(page)
         let x = CGFloat(page) * UIScreen.main.bounds.width
         v.scrollView.setContentOffset(CGPoint(x: x, y: 0), animated: false)
         //select menut item and deselect others
