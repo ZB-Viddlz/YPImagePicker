@@ -49,6 +49,14 @@ public struct YPImagePickerConfiguration {
         
     /// Defines which screen is shown at launch. Video mode will only work if `showsVideo = true`. Default value is `.photo`
     public var startOnScreen: YPPickerScreen = .photo
+    
+    /// Defines the time limit for recording videos.
+    /// Default is 30 seconds.
+    public var videoRecordingTimeLimit: TimeInterval = 30.0
+    
+    /// Defines the time limit for videos from the library.
+    /// Defaults to 60 seconds.
+    public var videoFromLibraryTimeLimit: TimeInterval = 60.0
 
     /// Bottom Menu Configurations
     public var bottomMenuItemSelectedColor = UIColor(r: 38, g: 38, b: 38)
