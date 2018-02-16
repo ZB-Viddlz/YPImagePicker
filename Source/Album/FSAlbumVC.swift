@@ -78,13 +78,13 @@ PHPhotoLibraryChangeObserver, UIGestureRecognizerDelegate, UICollectionViewDeleg
     
     
     //MultipleSelections
-    public var multipleSelectionButtonTapped: ((Bool) -> Void)?
+    public var multipleSelectionButtonTapped: ((Bool, UIButton) -> Void)?
     var enableMultipleSelection = false {
         didSet {
             cropRects.removeAll()
             phAssets.removeAll()
             refreshMediaRequest()
-            multipleSelectionButtonTapped?(enableMultipleSelection)
+            multipleSelectionButtonTapped?(enableMultipleSelection, v.imageCropViewContainer.multipleSelectionButton)
         }
     }
     var phAssets: [PHAsset] = [PHAsset]()

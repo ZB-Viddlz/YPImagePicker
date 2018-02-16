@@ -52,7 +52,7 @@ public class PickerVC: FSBottomPager, PagerDelegate {
     public var didSelectMultipleImages: (([UIImage]) -> Void)?
     public var didSelectVideo: ((URL) -> Void)?
     public var onCancel: (() -> Void)?
-    public var multipleSelectionButtonTapped: ((Bool) -> Void)?
+    public var multipleSelectionButtonTapped: ((Bool, UIButton) -> Void)?
 
     enum Mode {
         case library
