@@ -42,13 +42,15 @@ public class YPImagePicker: UINavigationController {
     public var didSelectVideo: ((Data, UIImage) -> Void)?
     public var didSelectMultipleImages: (([UIImage]) -> Void)?
     public var onCancel: (() -> Void)?
-    
+    public var multipleSelectionButtonTapped: ((Bool) -> Void)?
+
     override public func viewDidLoad() {
         super.viewDidLoad()
         viewControllers = [picker]
         navigationBar.isTranslucent = false
 
         picker.onCancel = onCancel
+        picker.multipleSelectionButtonTapped = self.multipleSelectionButtonTapped
         
         picker.didSelectMultipleImages = { [unowned self] images in
             self.didSelectMultipleImages?(images)

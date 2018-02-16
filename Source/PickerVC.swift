@@ -52,6 +52,7 @@ public class PickerVC: FSBottomPager, PagerDelegate {
     public var didSelectMultipleImages: (([UIImage]) -> Void)?
     public var didSelectVideo: ((URL) -> Void)?
     public var onCancel: (() -> Void)?
+    public var multipleSelectionButtonTapped: ((Bool) -> Void)?
 
     enum Mode {
         case library
@@ -83,6 +84,7 @@ public class PickerVC: FSBottomPager, PagerDelegate {
         flashOffImage = imageFromBundle("yp_iconFlash_off")
         
         albumVC.delegate = self
+        albumVC.multipleSelectionButtonTapped = multipleSelectionButtonTapped
         
         view.backgroundColor = UIColor(r: 247, g: 247, b: 247)
         cameraVC.didCapturePhoto = { [unowned self] img in
