@@ -47,6 +47,13 @@ public class FSCameraVC: UIViewController, UIGestureRecognizerDelegate {
             self.setupCaptureSession()
         }
     }
+
+    public override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        if isPreviewSetup {
+            startCamera()
+        }
+    }
     
     public override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
