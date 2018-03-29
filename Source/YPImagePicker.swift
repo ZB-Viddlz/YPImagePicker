@@ -15,6 +15,14 @@ public class YPImagePicker: UINavigationController {
     public static func setDefaultConfiguration(_ config: YPImagePickerConfiguration) {
         defaultConfiguration = config
     }
+
+    override public var shouldAutorotate: Bool {
+        return false
+    }
+
+    override public var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+        return .portrait
+    }
     
     private static var defaultConfiguration = YPImagePickerConfiguration()
     
