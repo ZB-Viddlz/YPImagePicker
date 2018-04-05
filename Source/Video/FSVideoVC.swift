@@ -93,14 +93,14 @@ public class FSVideoVC: UIViewController {
             }
             
             // Add audio recording
-            for device in AVCaptureDevice.devices(for: .audio) {
-                if let audioInput = try? AVCaptureDeviceInput(device: device) {
-                    if session.canAddInput(audioInput) {
-                        session.addInput(audioInput)
-                    }
-                }
-            }
-            
+//            for device in AVCaptureDevice.devices(for: .audio) {
+//                if let audioInput = try? AVCaptureDeviceInput(device: device) {
+//                    if session.canAddInput(audioInput) {
+//                        session.addInput(audioInput)
+//                    }
+//                }
+//            }
+
             let timeScale: Int32 = 30 // FPS
             let maxDuration =
             CMTimeMakeWithSeconds(configuration.videoRecordingTimeLimit, timeScale)
@@ -203,13 +203,13 @@ public class FSVideoVC: UIViewController {
             }
             
             // Re Add audio recording
-            for device in AVCaptureDevice.devices(for: .audio) {
-                if let audioInput = try? AVCaptureDeviceInput(device: device) {
-                    if self.session.canAddInput(audioInput) {
-                        self.session.addInput(audioInput)
-                    }
-                }
-            }
+//            for device in AVCaptureDevice.devices(for: .audio) {
+//                if let audioInput = try? AVCaptureDeviceInput(device: device) {
+//                    if self.session.canAddInput(audioInput) {
+//                        self.session.addInput(audioInput)
+//                    }
+//                }
+//            }
             self.session.commitConfiguration()
             DispatchQueue.main.async {
                 self.refreshFlashButton()
